@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Patent-speurhond V1 — pijplijn</title>
+<style>
+  /* ─────────────────────────────────────────────────
+     AANPASSEN? Verander de waardes hier:
+     - Tekst: zoek de tekst op en vervang hem
+     - Breedtes kolommen: zoek .stage { width: ...px }
+     - Ruimte tussen elementen: zoek gap: ...px
+     - Kleuren: zoek de hex-code (bijv. #F0C040)
+  ───────────────────────────────────────────────── */
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0F1E2E;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 32px;
+    min-width: 1100px;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #F0C040;
+    margin-bottom: 6px;
+  }
+  .header p {
+    font-size: 13px;
+    color: #7A9BBE;
+    margin-bottom: 10px;
+  }
+  .legend {
+    display: inline-block;
+    background: #162840;
+    border: 1px solid #1E3A58;
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-size: 12px;
+    color: #8BBAD8;
+  }
+
+  /* ── Pipeline rij ── */
+  .pipeline {
+    display: flex;
+    align-items: flex-end;   /* vijvers groeien van onderaf */
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+
+  /* ── Stage kolom ──
+     Breedte aanpassen: verander de width hieronder */
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 148px;          /* ← breedte van elke stage-kolom */
+    flex-shrink: 0;
+  }
+
+  /* Vijver-zone: vaste hoogte, vijver groeit van onderaf */
+  .pond-zone {
+    width: 100%;
+    height: 270px;          /* ← hoogte van het vijver-gebied */
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: 10px;
+  }
+
+  /* ── Vijver ── */
+  .pond {
+    position: relative;
+    border-radius: 50%;
+    background: #1B4E7A;
+    border: 3px solid #2D7AB5;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
+  .pond.gold {
+    background: #1A3C6A;
+    border: 4px solid #F0C040;
+    box-shadow: 0 0 0 2px #F0C04030;
+  }
+
+  /* Rimpels */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.10);
+    pointer-events: none;
+  }
+
+  /* Vissen */
+  .fish-rows {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    line-height: 1;
+    padding: 8px 6px 0;
+  }
+
+  /* Aantal-label onderin de vijver */
+  .pond-count {
+    position: absolute;
+    bottom: 25px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+  }
+  .pond-count.gold { color: #F0C040; }
+
+  /* Stage-naam onder vijver */
+  .stage-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #A8C8E8;
+    text-align: center;
+    height: 22px;
+    line-height: 22px;
+    margin-bottom: 8px;
+    white-space: nowrap;
+  }
+  .stage-name.gold { color: #F0C040; }
+
+  /* ── Actor card ── */
+  .actor {
+    width: 100%;
+    background: #162840;
+    border: 1px solid #1E3A58;
+    border-radius: 10px;
+    overflow: hidden;
+    height: 86px;           /* ← hoogte van alle actor-cards */
+  }
+  .actor-bar {
+    height: 5px;
+    width: 100%;
+  }
+  .actor-body {
+    padding: 8px 10px 8px;
+  }
+  .actor-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #E8F4FF;
+    margin-bottom: 4px;
+  }
+  .actor-title.gold { color: #F0C040; }
+  .actor-desc {
+    font-size: 10px;
+    color: #5A8AAA;
+    line-height: 1.45;
+  }
+
+  /* ── Pijl-kolom ──
+     Breedte aanpassen: verander width hieronder */
+  .arrow-col {
+    width: 64px;            /* ← breedte pijl-kolommen */
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 94px;   /* = stage-naam (22) + actor (86) - kleine correctie */
+  }
+  .arrow-pill {
+    background: #1E3A58;
+    border: 1px solid #2D5A82;
+    border-radius: 20px;
+    padding: 3px 9px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6AADCE;
+    text-align: center;
+    white-space: nowrap;
+    margin-bottom: 7px;
+    line-height: 1.4;
+  }
+  .arrow-svg {
+    width: 38px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Resultaat-kolom ── */
+  .result-col {
+    width: 130px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 32px;
+  }
+  .result-card {
+    background: #162840;
+    border: 2px solid #F0C040;
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    width: 120px;
+  }
+  .result-icon  { font-size: 28px; margin-bottom: 8px; }
+  .result-title { font-size: 13px; font-weight: 700; color: #F0C040; margin-bottom: 5px; }
+  .result-desc  { font-size: 10px; color: #5A8AAA; line-height: 1.5; }
+
+  /* ── Familie-balk ── */
+  .fam-bar {
+    background: #162840;
+    border: 1px solid #1E3A58;
+    border-radius: 8px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: #7A9BBE;
+  }
+  .fam-bar .label { font-weight: 700; color: #A8C8E8; }
+  .fam-bar .note  { color: #5A7A52; font-style: italic; margin-left: auto; }
+
+  /* ── Waarschuwing ── */
+  .warning {
+    background: #1A0F0F;
+    border: 1.5px dashed #7A2020;
+    border-radius: 10px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .warning-icon  { font-size: 20px; flex-shrink: 0; padding-top: 1px; }
+  .warning-title { font-size: 12px; font-weight: 700; color: #E05050; margin-bottom: 4px; }
+  .warning-body  { font-size: 11px; color: #8A4040; line-height: 1.55; }
+  .warning-body b { color: #CC3030; }
+
+  /* ── Footer ── */
+  .footer {
+    background: #162840;
+    border: 1px solid #1E3A58;
+    border-radius: 8px;
+    padding: 9px 18px;
+    text-align: center;
+    font-size: 12px;
+    color: #7A9BBE;
+  }
+  .footer b { color: #A8C8E8; }
+  .footer .gold { color: #F0C040; font-weight: 700; }
+
+  /* ── Info box ── */
+  .info-box {
+    background: #162840;
+    border: 1px solid #1E3A58;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: #7A9BBE;
+    line-height: 1.6;
+  }
+  .info-box .label { font-weight: 700; color: #F0C040; display: block; margin-bottom: 6px; }
+  .info-box .bullet { margin-left: 16px; margin-bottom: 4px; }
+
+  /* ── Recall explanation ── */
+  .recall-note {
+    background: #1A3C2A;
+    border: 1px solid #2A5A42;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 10px;
+    color: #6AAAA9;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <h1>Trooy V1 pijplijn</h1>
+  <p>De vijver wordt stap voor stap kleiner, maar de vissen worden steeds beter</p>
+</div>
+
+<!-- ═══ WAARSCHUWING ═══ -->
+<div class="warning">
+  <div class="warning-icon">❌</div>
+  <div>
+    <div class="warning-title">Waarom niet direct het taalmodel gebruiken?</div>
+    <div class="warning-body">
+      255.000 codes × taalmodel = <b>uren wachten</b> en een <b>enorme rekening</b>.
+      Daarom filteren we slim in stappen, zodat het taalmodel alleen de beste 20 hoeft
+      te beoordelen in plaats van een kwart miljoen.
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LEGENDA ═══ -->
+<div class="legend" style="display: block; text-align: center; margin: 16px 0; padding: 8px 0;">
+  🐟 = CPC-code &nbsp;|&nbsp; ⭐ = beste match
+</div>
+
+<!-- ═══ RECALL UITLEG ═══ -->
+<div class="recall-note">
+  <b>Wat zie je?</b> Elk percentage is <b>Recall</b> — het percentage goede matches dat we behouden.
+  Bijv. 97% = we filteren 3% onzin weg, maar houden 97% van de echte kandidaten. Stap voor stap verfijnen.
+</div>
+
+<!-- ═══ PIPELINE ═══ -->
+<div class="pipeline">
+
+  <!-- ── STAGE 1 — 250.000 ── -->
+  <div class="stage">
+    <div class="pond-zone">
+      <div class="pond" style="width:300px; height:250px;">
+        <div class="ripple" style="inset:6px;"></div>
+        <div class="ripple" style="inset:18px;"></div>
+        <div class="fish-rows">
+          <div>🐟 🐡 🐠 🐟</div>
+          <div>🐠 🐟 🐡 🐠</div>
+          <div>🐟 🐠 🐟 🐡</div>
+          <div>🐡 🐟 🐠 🐟</div>
+          <div>🐠 🐡 🐟 🐠</div>
+        </div>
+        <div class="pond-count">255.000 codes</div>
+      </div>
+    </div>
+    <div class="stage-name">De grote vijver</div>
+    <div class="actor">
+      <div class="actor-bar" style="background:#F0C040;"></div>
+      <div class="actor-body">
+        <div class="actor-title">🎣 HDE + LLM</div>
+        <div class="actor-desc">Vertaalt de omschrijving indien nodig naar een slimme zoekopdracht</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIJL 1 -->
+  <div class="arrow-col">
+    <div class="arrow-pill">top 700<br>97%</div>
+    <svg class="arrow-svg" viewBox="0 0 38 16" fill="none">
+      <line x1="2" y1="8" x2="30" y2="8" stroke="#2D7AB5" stroke-width="2.5"/>
+      <polygon points="28,4 36,8 28,12" fill="#2D7AB5"/>
+    </svg>
+  </div>
+
+  <!-- ── STAGE 2 — 700 ── -->
+  <div class="stage">
+    <div class="pond-zone">
+      <div class="pond" style="width:118px; height:214px;">
+        <div class="ripple" style="inset:7px;"></div>
+        <div class="fish-rows">
+          <div>🐟 🐟 🐡</div>
+          <div>🐟 🐠 🐟</div>
+          <div>🐡 🐟 🐟</div>
+          <div>🐟 🐠 🐡</div>
+          <div>🐟 🐟 🐟</div>
+        </div>
+        <div class="pond-count">700 codes</div>
+      </div>
+    </div>
+    <div class="stage-name">Kleinere vijver</div>
+    <div class="actor">
+      <div class="actor-bar" style="background:#3AA876;"></div>
+      <div class="actor-body">
+        <div class="actor-title">👦👦 Okkie &amp; Troy</div>
+        <div class="actor-desc">Twee bi-encoders. Gooien het grote net uit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIJL 2 -->
+  <div class="arrow-col">
+    <div class="arrow-pill">top 75<br>90%</div>
+    <svg class="arrow-svg" viewBox="0 0 38 16" fill="none">
+      <line x1="2" y1="8" x2="30" y2="8" stroke="#2D7AB5" stroke-width="2.5"/>
+      <polygon points="28,4 36,8 28,12" fill="#2D7AB5"/>
+    </svg>
+  </div>
+
+  <!-- ── STAGE 3 — 75 ── -->
+  <div class="stage">
+    <div class="pond-zone">
+      <div class="pond" style="width:102px; height:168px;">
+        <div class="ripple" style="inset:8px;"></div>
+        <div class="fish-rows">
+          <div>🐟 🐟 🐟</div>
+          <div>🐟 🐡 🐟</div>
+          <div>🐟 🐟 🐠</div>
+        </div>
+        <div class="pond-count">75 codes</div>
+      </div>
+    </div>
+    <div class="stage-name">Kleine vijver</div>
+    <div class="actor">
+      <div class="actor-bar" style="background:#4A7FCC;"></div>
+      <div class="actor-body">
+        <div class="actor-title">👨‍💼 Pa-tent</div>
+        <div class="actor-desc">XGBoost. Rankt op slimme kenmerken</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIJL 3 -->
+  <div class="arrow-col">
+    <div class="arrow-pill">top 20<br>70%</div>
+    <svg class="arrow-svg" viewBox="0 0 38 16" fill="none">
+      <line x1="2" y1="8" x2="30" y2="8" stroke="#2D7AB5" stroke-width="2.5"/>
+      <polygon points="28,4 36,8 28,12" fill="#2D7AB5"/>
+    </svg>
+  </div>
+
+  <!-- ── STAGE 4 — 20 ── -->
+  <div class="stage">
+    <div class="pond-zone">
+      <div class="pond gold" style="width:86px; height:122px;">
+        <div class="ripple" style="inset:8px; border-color:rgba(240,192,64,0.2);"></div>
+        <div class="fish-rows">
+          <div>⭐ ⭐ ⭐</div>
+          <div>⭐ ⭐ ⭐</div>
+        </div>
+        <div class="pond-count gold">20 codes</div>
+      </div>
+    </div>
+    <div class="stage-name gold">Gouden emmer</div>
+    <div class="actor" style="border-color:#2A3050;">
+      <div class="actor-bar" style="background:#F0C040;"></div>
+      <div class="actor-body">
+        <div class="actor-title gold">👩‍💻 Ma-tent</div>
+        <div class="actor-desc">Taalmodel. Leest écht en kiest de allerbeste 20</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIJL 4 → resultaat -->
+  <div class="arrow-col">
+    <svg class="arrow-svg" style="width:42px;" viewBox="0 0 42 16" fill="none">
+      <line x1="2" y1="8" x2="34" y2="8" stroke="#F0C040" stroke-width="2.5"/>
+      <polygon points="32,4 40,8 32,12" fill="#F0C040"/>
+    </svg>
+  </div>
+
+  <!-- ── RESULTAAT ── -->
+  <div class="result-col">
+    <div class="result-card">
+      <div class="result-icon">🏆</div>
+      <div class="result-title">Resultaat</div>
+      <div class="result-desc">Beste CPC-codes voor jouw omschrijving</div>
+    </div>
+  </div>
+
+</div><!-- einde pipeline -->
+
+<!-- ═══ VOORDELEN ═══ -->
+<div class="info-box">
+  <span class="label">⚡ Waarom deze aanpak?</span>
+  <div class="bullet">✓ <b>Sneller:</b> seconden i.p.v. uren — je hebt je antwoord meteen</div>
+  <div class="bullet">✓ <b>Goedkoper:</b> Dure AI-checks alleen voor de beste 20 i.p.v. alle 255.000</div>
+  <div class="bullet">✓ <b>Betrouwbaarder:</b> Elk filter verwijdert onzin — rest wordt steeds beter</div>
+  <div class="bullet">✓ <b>Doelgericht:</b> Eerst het brede net, dan laserfocus op de echte kandidaten</div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="footer">
+  <b>255.000</b> → <b>700</b> → <b>75</b> → <span class="gold">20 beste</span>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  Recall: <b>100%</b> → <b>97%</b> → <b>90%</b> → <span class="gold">70% top-20</span>
+</div>
+
+</body>
+</html>
